@@ -1,0 +1,205 @@
+From 795c609f581cb200849c9f38257e47b25610edd0 Mon Sep 17 00:00:00 2001
+From: MeFisto94 <MeFisto94@users.noreply.github.com>
+Date: Wed, 18 Aug 2021 04:25:28 +0200
+Subject: [PATCH] First Step towards a dedicated server: delegate
+ SteamNetworking calls to a wrapper that supports both connection types.
+
+---
+ Semih_Network.cs | 53 +++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 35 insertions(+), 18 deletions(-)
+
+diff --git a/Semih_Network.cs b/Semih_Network.cs
+index 303eb04..90a1f68 100644
+--- a/Semih_Network.cs
++++ b/Semih_Network.cs
+@@ -4,6 +4,7 @@ using System.Collections.Generic;
+ using System.IO;
+ using System.Linq;
+ using System.Runtime.Serialization.Formatters.Binary;
++using SharkkitDedicated;
+ using Steamworks;
+ using UnityEngine;
+ using UnityEngine.SceneManagement;
+@@ -210,7 +211,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		InvokeRepeating("CalculateBytes", 1f, 1f);
+ 		DontDestroyOnLoadManager.AddGameObject(base.gameObject);
+ 		localSteamID = SteamUser.GetSteamID();
+-		SteamNetworking.AllowP2PPacketRelay(true);
++		NetworkWrapper.AllowP2PPacketRelay(true); // Sharkkit Dedicated - Redirect call to Network Wrapper
+ 		SceneManager.sceneLoaded += OnSceneLoaded;
+ 		bedRespawnPoint = GameObject.FindWithTag("RespawnPointBed");
+ 		loadSceneManager = GetComponent<LoadSceneManager>();
+@@ -226,14 +227,17 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 
+ 	private void OnApplicationQuit()
+ 	{
++		// Sharkkit Dedicated Start - Redirect calls to the Network Wrapper and deinit it 
+ 		foreach (KeyValuePair<CSteamID, Network_Player> remoteUser in remoteUsers)
+ 		{
+-			if (SteamNetworking.GetP2PSessionState(remoteUser.Key, out var _))
++			if (NetworkWrapper.GetP2PSessionState(remoteUser.Key, out var _))
+ 			{
+-				SteamNetworking.CloseP2PSessionWithUser(remoteUser.Key);
++				NetworkWrapper.CloseP2PSessionWithUser(remoteUser.Key);
+ 			}
+ 		}
+ 		SteamFriends.ClearRichPresence();
++		NetworkWrapper.Deinitialize();
++		// Sharkkit Dedicated End - Redirect calls to the Network Wrapper and deinit it
+ 	}
+ 
+ 	private void Awake()
+@@ -243,6 +247,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 			UnityEngine.Object.Destroy(base.gameObject);
+ 			return;
+ 		}
++		NetworkWrapper.Initialize(); // Sharkkit Dedicated - Initializing the networking stack 
+ 		initialized = true;
+ 		isHost = true;
+ 		HandleCommandArgs();
+@@ -260,6 +265,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 
+ 	private void Update()
+ 	{
++		NetworkWrapper.Tick(); // Sharkkit Dedicated - Tick the Network Wrapper
+ 		ReadP2P_Channel_Connecting();
+ 		ReadP2P_Channel_Game();
+ 	}
+@@ -384,7 +390,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 			Packet_Single graph = new Packet_Single(EP2PSend.k_EP2PSendReliable, message);
+ 			memoryStream.SetLength(0L);
+ 			binaryFormatter.Serialize(memoryStream, graph);
+-			if (!SteamNetworking.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packetSingle.SendType, (int)channel))
++			// Sharkkit Dedicated - Redirect call to Network Wrapper
++			if (!NetworkWrapper.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packetSingle.SendType, (int)channel))
+ 			{
+ 				Debug.LogError("Failed to send fragmented message: " + packetSingle.message);
+ 			}
+@@ -403,7 +410,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 			{
+ 				SendP2PFragmented(memoryStream, binaryFormatter, steamID, packetSingle, channel);
+ 			}
+-			else if (!SteamNetworking.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packetSingle.SendType, (int)channel) && Application.isEditor)
++			// Sharkkit Dedicated - Redirect call to Network Wrapper, also log error when not in editor to be consistent.
++			else if (!NetworkWrapper.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packetSingle.SendType, (int)channel))
+ 			{
+ 				Debug.LogError("Failed to send message: " + packetSingle.message);
+ 			}
+@@ -444,7 +452,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		}
+ 		else
+ 		{
+-			SteamNetworking.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packet.SendType, (int)channel);
++			// Sharkkit Dedicated - Redirect call to Network Wrapper
++			NetworkWrapper.SendP2PPacket(steamID, memoryStream.ToArray(), (uint)memoryStream.Length, packet.SendType, (int)channel);
+ 		}
+ 		totalBytesSent += memoryStream.Length;
+ 		lastSecondBytes += memoryStream.Length;
+@@ -570,12 +579,14 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 
+ 	private void ReadP2P_Channel_Connecting()
+ 	{
+-		if (!SteamNetworking.IsP2PPacketAvailable(out var pcubMsgSize, 1))
++		// Sharkkit Dedicated - Redirect call to Network Wrapper
++		if (!NetworkWrapper.IsP2PPacketAvailable(out var pcubMsgSize, 1))
+ 		{
+ 			return;
+ 		}
+ 		byte[] array = new byte[pcubMsgSize];
+-		if (!SteamNetworking.ReadP2PPacket(array, pcubMsgSize, out var _, out var psteamIDRemote, 1))
++		// Sharkkit Dedicated - Redirect call to Network Wrapper
++		if (!NetworkWrapper.ReadP2PPacket(array, pcubMsgSize, out var _, out var psteamIDRemote, 1))
+ 		{
+ 			return;
+ 		}
+@@ -637,20 +648,20 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 							SteamFriends.SetRichPresence("connect", CONNECT + HostID.ToString() + ":PW");
+ 						}
+ 						SteamFriends.SetRichPresence("status", STATUS_RemoteClient);
+-						SteamNetworking.AcceptP2PSessionWithUser(psteamIDRemote);
++						NetworkWrapper.AcceptP2PSessionWithUser(psteamIDRemote); // Sharkkit Dedicated - Redirect call to Network Wrapper
+ 						GameModeValueManager.SelectCurrentGameMode(message_InitiateConnectionResult.gameMode);
+ 						LoadScene(GameSceneName);
+ 						whitelistedUsers.AddUniqueOnly(psteamIDRemote);
+ 					}
+ 					else if (message_InitiateConnectionResult.result != InitiateResult.Fail_AlreadyConnecting && message_InitiateConnectionResult.result != InitiateResult.Fail_AlreadyOnServer && message_InitiateConnectionResult.result != 0)
+ 					{
+-						SteamNetworking.CloseP2PSessionWithUser(psteamIDRemote);
++						NetworkWrapper.CloseP2PSessionWithUser(psteamIDRemote); // Sharkkit Dedicated - Redirect call to Network Wrapper
+ 					}
+ 					awaitingConnectionResponseUser.Clear();
+ 				}
+ 				else
+ 				{
+-					SteamNetworking.CloseP2PSessionWithUser(psteamIDRemote);
++					NetworkWrapper.CloseP2PSessionWithUser(psteamIDRemote); // Sharkkit Dedicated - Redirect call to Network Wrapper
+ 				}
+ 				break;
+ 			}
+@@ -694,10 +705,11 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 	private void ReadP2P_Channel_Game()
+ 	{
+ 		uint pcubMsgSize;
+-		while (SteamNetworking.IsP2PPacketAvailable(out pcubMsgSize))
++		// Sharkkit Dedicated - Redirect call to Network Wrapper
++		while (NetworkWrapper.IsP2PPacketAvailable(out pcubMsgSize))
+ 		{
+ 			byte[] array = new byte[pcubMsgSize];
+-			if (!SteamNetworking.ReadP2PPacket(array, pcubMsgSize, out var _, out var psteamIDRemote))
++			if (!NetworkWrapper.ReadP2PPacket(array, pcubMsgSize, out var _, out var psteamIDRemote))
+ 			{
+ 				continue;
+ 			}
+@@ -964,7 +976,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 	{
+ 		if (awaitingConnectionResponseUser.IsValid())
+ 		{
+-			SteamNetworking.CloseP2PSessionWithUser(HostID);
++			// Sharkkit Dedicated - Redirect call to Network Wrapper
++			NetworkWrapper.CloseP2PSessionWithUser(HostID);
+ 			awaitingConnectionResponseUser.Clear();
+ 			hostID.Clear();
+ 		}
+@@ -1044,7 +1057,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		{
+ 			return InitiateResult.Fail_NotHost;
+ 		}
+-		if (appBuildID != Settings.AppBuildID)
++		if (appBuildID != 0 && appBuildID != Settings.AppBuildID) // SharkkitDedicated - Allow 0 as AppBuildID
+ 		{
+ 			return InitiateResult.Fail_MissmatchAppBuildID;
+ 		}
+@@ -1420,7 +1433,9 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		{
+ 			connectingUsers.Remove(remoteID);
+ 		}
+-		if (IsUserWhitelisted(remoteID) && SteamNetworking.AcceptP2PSessionWithUser(remoteID))
++		
++		// Sharkkit Dedicated - Redirect call to Network Wrapper
++		if (IsUserWhitelisted(remoteID) && NetworkWrapper.AcceptP2PSessionWithUser(remoteID))
+ 		{
+ 			Helper.LogBuild("Semih_Network: OnIncommingConnection = Adding client " + SteamFriends.GetFriendPersonaName(remoteID));
+ 			AddPlayer(remoteID, characterSettings);
+@@ -1552,7 +1567,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 			{
+ 				ComponentManager<SaveAndLoad>.Value.SaveGame(true);
+ 			}
+-			SteamNetworking.CloseP2PSessionWithUser(remoteID);
++			// Sharkkit Dedicated - Redirect call to Network Wrapper
++			NetworkWrapper.CloseP2PSessionWithUser(remoteID);
+ 		}
+ 	}
+ 
+@@ -1561,7 +1577,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		yield return new WaitForSeconds(timeDelay);
+ 		foreach (KeyValuePair<CSteamID, Network_Player> remoteUser in remoteUsers)
+ 		{
+-			SteamNetworking.CloseP2PSessionWithUser(remoteUser.Key);
++			// Sharkkit Dedicated - Redirect call to Network Wrapper
++			NetworkWrapper.CloseP2PSessionWithUser(remoteUser.Key);
+ 		}
+ 		remoteUsers.Clear();
+ 		isHost = false;
+-- 
+2.7.4
+

@@ -1,0 +1,27 @@
+From 38ea2ce408299f8f60d3e1d1c79e7afc65809041 Mon Sep 17 00:00:00 2001
+From: MeFisto94 <MeFisto94@users.noreply.github.com>
+Date: Mon, 16 Aug 2021 03:03:13 +0200
+Subject: [PATCH] Allow Cheats to be used by default (ctrl+shift+F1...F11)
+
+---
+ Cheat.cs | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Cheat.cs b/Cheat.cs
+index 3d3e068..4718517 100644
+--- a/Cheat.cs
++++ b/Cheat.cs
+@@ -217,7 +217,9 @@ public class Cheat : MonoBehaviour_ID_Network
+ 		{
+ 			return false;
+ 		}
+-		return AllowCheatsForUser(player.steamID);
++		// Sharkkit Start - Allow Cheats by default
++		return true; // return AllowCheatsForUser(player.steamID);
++		// Sharkkit End
+ 	}
+ 
+ 	public static bool AllowCheatsForUser(CSteamID cSteamID)
+-- 
+2.7.4
+

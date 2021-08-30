@@ -1,0 +1,68 @@
+From a39d63e536acc4138de46fd1dbc122f8293f3d1b Mon Sep 17 00:00:00 2001
+From: MeFisto94 <MeFisto94@users.noreply.github.com>
+Date: Mon, 16 Aug 2021 14:52:02 +0200
+Subject: [PATCH] First steps at implementing the chat for IO
+
+---
+ ChatManager.cs | 12 +++++++++++-
+ GameManager.cs |  7 ++++++-
+ 2 files changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/ChatManager.cs b/ChatManager.cs
+index c3c8295..fbc4774 100644
+--- a/ChatManager.cs
++++ b/ChatManager.cs
+@@ -1,7 +1,7 @@
+ using Steamworks;
+ using UnityEngine;
+ 
+-public class ChatManager : MonoBehaviour_Network
++public class ChatManager : MonoBehaviour_Network, SharkkitAPI.IChatManager
+ {
+ 	public delegate void OnRecieveChatMessageAction();
+ 
+@@ -11,6 +11,11 @@ public class ChatManager : MonoBehaviour_Network
+ 	public ChatTextFieldController chatFieldController;
+ 
+ 	public static event OnRecieveChatMessageAction OnRecieveChatMessage;
++	
++	void SharkkitAPI.IChatManager.LocalDebugChatMessage(string message)
++	{
++		LocalDebugChatMessage(message);
++	}
+ 
+ 	private void Awake()
+ 	{
+@@ -65,6 +70,11 @@ public class ChatManager : MonoBehaviour_Network
+ 		chatManager.SendChatMessage(message, network_Player.steamID);
+ 	}
+ 
++	void SharkkitAPI.IChatManager.SendDebugChatMessage(string message)
++	{
++		SendDebugChatMessage(message);
++	}
++
+ 	public static void LocalDebugChatMessage(string message)
+ 	{
+ 		ChatManager chatManager = null;
+diff --git a/GameManager.cs b/GameManager.cs
+index 782394f..1b32426 100644
+--- a/GameManager.cs
++++ b/GameManager.cs
+@@ -88,7 +88,12 @@ public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface, S
+ 
+ 	string SharkkitAPI.GameManager.Version => Settings.VersionNumberText;
+ 
+-	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText; 
++	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText;
++
++	public SharkkitAPI.IChatManager GetChatManager()
++	{
++		return ComponentManager<ChatManager>.Value;
++	}
+ 
+ 	public SharkkitAPI.GameManager Instance => Singleton;
+ 	// Sharkkit End
+-- 
+2.7.4
+

@@ -1,0 +1,85 @@
+From 175938bad613cb0a4556497df63265681c0cfe36 Mon Sep 17 00:00:00 2001
+From: MeFisto94 <MeFisto94@users.noreply.github.com>
+Date: Mon, 16 Aug 2021 01:15:17 +0200
+Subject: [PATCH] First steps towards an API exposing common GameManager fields
+ and exposing the Game and API Version (however as strings)
+
+---
+ GameManager.cs | 36 +++++++++++++++++++++++++++++++++++-
+ Settings.cs    |  6 +++++-
+ 2 files changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/GameManager.cs b/GameManager.cs
+index 6b7dfc8..782394f 100644
+--- a/GameManager.cs
++++ b/GameManager.cs
+@@ -5,7 +5,7 @@ using UnityEngine;
+ using UnityEngine.AzureSky;
+ using UnityEngine.SceneManagement;
+ 
+-public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface
++public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface, SharkkitAPI.GameManager // Sharkkit
+ {
+ 	public static bool IsLeavingGame = false;
+ 
+@@ -58,6 +58,40 @@ public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface
+ 	public Transform raftTransform;
+ 
+ 	public static bool HasPassword => !string.IsNullOrEmpty(Password);
++	
++	// Sharkkit Start - Implement interface
++	bool SharkkitAPI.GameManager.FriendlyFire
++	{
++		get => FriendlyFire;
++		set => FriendlyFire = value;
++	}
++
++	float SharkkitAPI.GameManager.TimePlayed
++	{
++		get => TimePlayed;
++		set => TimePlayed = value;
++	}
++
++	int SharkkitAPI.GameManager.TargetFrameRate
++	{
++		get => targetFrameRate;
++		set => targetFrameRate = value;
++	}
++
++	bool SharkkitAPI.GameManager.HasPassword => HasPassword;
++
++	string SharkkitAPI.GameManager.Password
++	{
++		get => Password;
++		set => Password = value;
++	}
++
++	string SharkkitAPI.GameManager.Version => Settings.VersionNumberText;
++
++	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText; 
++
++	public SharkkitAPI.GameManager Instance => Singleton;
++	// Sharkkit End
+ 
+ 	private void OnEnable()
+ 	{
+diff --git a/Settings.cs b/Settings.cs
+index 97f3ffc..2fe1e3a 100644
+--- a/Settings.cs
++++ b/Settings.cs
+@@ -40,7 +40,11 @@ public class Settings : MenuBox, SceneEventInterface
+ 
+ 	private RGD_Settings settings;
+ 
+-	public static string VersionNumberText => "Update " + Application.version + " (" + AppBuildID + ")";
++	// Sharkkit Start - Add API Implementation Version and add it to the game's version string.
++	public static string VersionNumberText => "Update " + Application.version + " (" + AppBuildID + $") [Sharkkit {ImplVersionNumberText}]";
++
++	public static string ImplVersionNumberText => "0.0.1";
++	// Sharkkit End
+ 
+ 	public override bool IsOpen => optionsCanvas.activeInHierarchy;
+ 
+-- 
+2.7.4
+

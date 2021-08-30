@@ -1,0 +1,96 @@
+From b2492b04387a7c9b3467bafb42d0c1044db0f60a Mon Sep 17 00:00:00 2001
+From: MeFisto94 <MeFisto94@users.noreply.github.com>
+Date: Fri, 20 Aug 2021 00:09:35 +0200
+Subject: [PATCH] Added an overload of Semih_Network#TryToJoinGame that takes
+ an IP-Port Pair and added a call to the command line parsing, that makes use
+ of that method.
+
+---
+ Semih_Network.cs | 48 ++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 40 insertions(+), 8 deletions(-)
+
+diff --git a/Semih_Network.cs b/Semih_Network.cs
+index 90a1f68..2fda124 100644
+--- a/Semih_Network.cs
++++ b/Semih_Network.cs
+@@ -922,23 +922,41 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		}
+ 	}
+ 
++	// Sharkkit Dedicated Start - Move method body down into a method also accepting ip:port addresses. 
+ 	public void TryToJoinGame(CSteamID hostID, string password)
+ 	{
++		TryToJoinGame(hostID, password, null, 0);
++	}
++
++	public void TryToJoinGame(CSteamID fakeHostId, string password, string ipAddress, ushort port)
++	{
+ 		if (IsConnectedToHost)
+ 		{
+ 			Helper.LogBuild("Can't join game, you are already connected to a host");
+ 		}
+ 		else if (!awaitingConnectionResponseUser.IsValid())
+ 		{
+-			this.hostID = hostID;
+-			awaitingConnectionResponseUser = hostID;
++			this.hostID = fakeHostId;
++			awaitingConnectionResponseUser = fakeHostId;
+ 			isHost = false;
+ 			gameManagerStartCalled = false;
+ 			worldLoadedCoroutine = null;
+-			Helper.LogBuild("Sending request to join " + SteamFriends.GetFriendPersonaName(hostID) + "'s game");
+-			SendP2P(hostID, new Message_InitiateConnection(Messages.InitiateSession, Settings.AppBuildID, password), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Session);
++			
++			if (ipAddress != null)
++			{
++				// Sharkkit Dedicated - The Network Wrapper needs to prepare a connection
++				NetworkWrapper.ConnectToIP(fakeHostId, ipAddress, port);
++				Helper.LogBuild($"Sending request to join the dedicated server at {ipAddress}:{port}");
++			}
++			else
++			{
++				Helper.LogBuild("Sending request to join " + SteamFriends.GetFriendPersonaName(fakeHostId) + "'s game");
++			}
++
++			SendP2P(fakeHostId, new Message_InitiateConnection(Messages.InitiateSession, Settings.AppBuildID, password), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Session);
+ 		}
+ 	}
++	// Sharkkit Dedicated End - Move method body down into a method also accepting ip:port addresses.
+ 
+ 	public void LeaveGame(DisconnectReason reason, SceneName sceneName, bool saveGame)
+ 	{
+@@ -1311,13 +1329,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 		{
+ 			return;
+ 		}
+-		foreach (string text2 in commandLineArgs)
++		foreach (var arg in commandLineArgs)
+ 		{
+-			text += text2;
+-			if (text2.Contains(CONNECT))
++			text += arg;
++			if (arg.Contains(CONNECT))
++			{
++				HandleConnectArgument(arg);
++			}
++			// Sharkkit Dedicated Start - Parse ips from the commandline and auto-connect
++			else if (CommandLine.Parse(arg, out var addr, out var port, out var steamId))
+ 			{
+-				HandleConnectArgument(text2);
++				// The following is a copy of the original join code, but calling the correct TryToJoinGame Method
++				var startMenuScreen = FindObjectOfType<StartMenuScreen>();
++				// TODO: Password
++				TryToJoinGame(steamId, string.Empty, addr, port);
++				if (startMenuScreen != null && startMenuScreen.joinGameBox != null)
++				{
++					startMenuScreen.joinGameBox.connectingBox.gameObject.SetActive(true);
++					startMenuScreen.joinGameBox.connectingBox.StartConnectTimeoutTimer();
++				}
+ 			}
++			// Sharkkit Dedicated End - Parse ips from the commandline and auto-connect
+ 		}
+ 		string[] array = text.Replace(" ", "").ToLower().Split('-');
+ 		foreach (string text3 in array)
+-- 
+2.7.4
+
