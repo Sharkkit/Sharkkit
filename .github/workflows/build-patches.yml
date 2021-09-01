@@ -1,0 +1,55 @@
+name: Build Patches
+on: [push]
+ 
+jobs:
+  build:
+    runs-on: windows-latest
+ 
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        
+    - name: Checkout build dependencies
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: dependencies
+        repository: Sharkkit/Dependencies
+        token: ${{ secrets.PAT_DEPENDENCIES }}
+        
+    - name: Checkout API
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: api
+        repository: Sharkkit/API
+      
+    - name: Checkout Dedicated
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: dedicated
+        repository: Sharkkit/Dedicated
+        
+    - name: Copy dependencies to dedicated
+      run: cp -rv dependencies dedicated/dependencies
+
+    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.2
+       
+    #- name: Setup NuGet
+    #  uses: NuGet/setup-nuget@v1.0.2
+     
+    #- name: Restore NuGet Packages
+    #  run: nuget restore SharkkitDedicated.csproj
+ 
+    - name: Build API
+      run: msbuild SharkkitAPI.csproj /p:Configuration=Release
+      working-directory: api
+      
+    - name: Build Dedicated
+      run: msbuild SharkkitDedicated.csproj /p:Configuration=Release
+      working-directory: dedicated
