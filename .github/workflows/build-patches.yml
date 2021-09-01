@@ -35,7 +35,7 @@ jobs:
         
     - name: Copy dependencies to dedicated
       # Powershell syntax!
-      run: Copy-Item 'dependencies' -Destination 'dedicated/Dependencies'
+      run: Copy-Item 'dependencies' -Destination 'dedicated/Dependencies' -Recurse
 
     - name: Debug Folder
       run: dir
