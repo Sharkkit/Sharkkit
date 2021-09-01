@@ -35,7 +35,7 @@ jobs:
         
     - name: Copy dependencies to dedicated
       # Powershell syntax!
-      run: Copy-Item 'dependencies' -Destination 'dedicated/dependencies'
+      run: Copy-Item 'dependencies' -Destination 'dedicated/Dependencies'
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
