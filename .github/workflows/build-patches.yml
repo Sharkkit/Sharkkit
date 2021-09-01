@@ -68,6 +68,8 @@ jobs:
       
     - name: Setup Papier Workspace # Requires Powershell 7
       run: |
+        New-Item -Path 'work' -ItemType Directory && \
+        New-Item -Path 'work\BuildData' -ItemType Directory && \
         Copy-Item 'dependencies\Game\*' -Destination 'work\BuildData' -Recurse && \
         Copy-Item 'dependencies\Runtime\*' -Destination 'work\BuildData' -Recurse && \
         Copy-Item 'dependencies\UnityEngine\*' -Destination 'work\BuildData' -Recurse && \
