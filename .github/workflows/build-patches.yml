@@ -66,5 +66,11 @@ jobs:
       run: msbuild SharkkitDedicated.csproj /p:Configuration=Release
       working-directory: dedicated
       
-    - name: Try to run Papier
-      run: dotnet run --project papier/Papier.csproj -- --help
+    - name: Setup Papier Workspace # Requires Powershell 7
+      run: |
+        Copy-Item 'dependencies\Game\*' -Destination 'work\BuildData' -Recurse && \
+        Copy-Item 'dependencies\Runtime\*' -Destination 'work\BuildData' -Recurse && \
+        Copy-Item 'dependencies\UnityEngine\*' -Destination 'work\BuildData' -Recurse && \
+      
+    - name: Apply the Patches
+      run: dotnet run --project papier/Papier.csproj -- applyPatches
