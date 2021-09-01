@@ -37,6 +37,14 @@ jobs:
       # Powershell syntax!
       run: Copy-Item 'dependencies' -Destination 'dedicated/Dependencies'
 
+    - name: Debug Folder
+      run: dir
+      working-directory: dedicated
+      
+    - name: Debug Folder
+      run: dir Dependencies
+      working-directory: dedicated
+
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
