@@ -33,21 +33,24 @@ jobs:
         path: dedicated
         repository: Sharkkit/Dedicated
         
+    - name: Checkout Papier
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: papier
+        repository: MeFisto94/Papier
+        
     - name: Copy dependencies to dedicated
       # Powershell syntax!
       run: Copy-Item 'dependencies' -Destination 'dedicated/Dependencies' -Recurse
 
-    - name: Debug Folder
-      run: dir
-      working-directory: dedicated
-      
-    - name: Debug Folder
-      run: dir Dependencies
-      working-directory: dedicated
-
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.2
+      
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
        
     #- name: Setup NuGet
     #  uses: NuGet/setup-nuget@v1.0.2
@@ -62,3 +65,6 @@ jobs:
     - name: Build Dedicated
       run: msbuild SharkkitDedicated.csproj /p:Configuration=Release
       working-directory: dedicated
+      
+    - name: Try to run Papier
+      run: dotnet run --project papier/Papier.csproj -- --help
