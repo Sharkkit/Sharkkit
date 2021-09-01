@@ -34,7 +34,8 @@ jobs:
         repository: Sharkkit/Dedicated
         
     - name: Copy dependencies to dedicated
-      run: cp -rv dependencies dedicated/dependencies
+      # Powershell syntax!
+      run: CopyItem 'dependencies' -Destination 'dedicated/dependencies'
 
     # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
     - name: Setup MSBuild.exe
