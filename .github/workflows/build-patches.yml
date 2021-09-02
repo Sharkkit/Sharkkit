@@ -74,7 +74,7 @@ jobs:
         Copy-Item 'dependencies\Runtime\*' -Destination 'work\BuildData' -Recurse &&
         Copy-Item 'dependencies\UnityEngine\*' -Destination 'work\BuildData' -Recurse &&
         Copy-Item 'api\bin\Release\SharkkitAPI.dll' -Destination 'work\BuildData' && 
-        Copy-Item 'api\bin\Release\SharkkitDedicated.dll' -Destination 'work\BuildData'
+        Copy-Item 'dedicated\bin\Release\SharkkitDedicated.dll' -Destination 'work\BuildData'
       
     - uses: Vampire/setup-wsl@v1
       name: Setup Ubuntu 20.04 in WSL (to use git)
