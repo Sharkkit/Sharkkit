@@ -74,5 +74,10 @@ jobs:
         Copy-Item 'dependencies\Runtime\*' -Destination 'work\BuildData' -Recurse &&
         Copy-Item 'dependencies\UnityEngine\*' -Destination 'work\BuildData' -Recurse
       
+    - uses: Vampire/setup-wsl@v1
+      name: Setup Ubuntu 20.04 in WSL (to use git)
+      with:
+        distribution: Ubuntu-20.04
+        
     - name: Apply the Patches
       run: dotnet run --project papier/Papier.csproj -- applyPatches
