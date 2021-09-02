@@ -1,0 +1,6 @@
+# Add the files that you want to change into the following lines.
+# Files that are changed by patch files are added automatically
+# Thus, DO NOT commit changes to this file. (*)
+# Add the class name without a file extension. Example: "Semih_Network"
+# *: The only tolerable exception may be if it's required to work
+# around the stub generation
