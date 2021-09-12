@@ -1,18 +1,27 @@
-From f5ed66d30b6d6e51643d35ce91daba093c40702a Mon Sep 17 00:00:00 2001
+From 20839d6109ae6d07a84b6fd56660d7b59ce9056c Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Fri, 20 Aug 2021 00:09:35 +0200
 Subject: [PATCH] Added an overload of Semih_Network#TryToJoinGame that takes
- an IP-Port Pair and added a call to the command line parsing, that makes use
- of that method.
+ an IP-Port Pair and added calls to the command line parsing for connect and
+ server hosting
 
 ---
- Semih_Network.cs | 53 ++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 42 insertions(+), 11 deletions(-)
+ Semih_Network.cs | 64 +++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 52 insertions(+), 12 deletions(-)
 
 diff --git a/Semih_Network.cs b/Semih_Network.cs
-index 3dc8957..8c25bb0 100644
+index 3dc8957..54c6001 100644
 --- a/Semih_Network.cs
 +++ b/Semih_Network.cs
+@@ -632,7 +632,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 				{
+ 					Semih_Network.OnJoinResult(psteamIDRemote, message_InitiateConnectionResult.result);
+ 				}
+-				
++
+ 				// Sharkkit Dedicated - Override this check because when connecting to a dedicated server, the steamId is not known before the handshake.
+ 				// Sharkkit Dedicated - In Vanilla it also feels rare that a client gets an InitiateResult request from a server they didn't connect to, anyway...
+ 				//if (awaitingConnectionResponseUser.IsValid() && awaitingConnectionResponseUser == psteamIDRemote)
 @@ -926,7 +926,13 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
  		}
  	}
@@ -70,11 +79,20 @@ index 3dc8957..8c25bb0 100644
  			awaitingConnectionResponseUser.Clear();
  			hostID.Clear();
  		}
-@@ -1315,13 +1332,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1315,13 +1332,36 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
  		{
  			return;
  		}
 -		foreach (string text2 in commandLineArgs)
++		
++		// Sharkkit Dedicated Start - Parse the dedicated commandLine and host a server
++		if (CommandLine.ParseDedicated(Array.AsReadOnly(commandLineArgs), out var listenArguments))
++		{
++			// TODO: Delay call to ListenOn until after a world has been loaded, to prevent crashes when connecting too early
++			NetworkWrapper.ListenOn(listenArguments);
++		}
++		// Sharkkit Dedicated End - Parse the dedicated commandLine and host a server
++		
 +		foreach (var arg in commandLineArgs)
  		{
 -			text += text2;
@@ -86,7 +104,7 @@ index 3dc8957..8c25bb0 100644
 +				HandleConnectArgument(arg);
 +			}
 +			// Sharkkit Dedicated Start - Parse ips from the commandline and auto-connect
-+			else if (CommandLine.Parse(arg, out var addr, out var port, out var steamId))
++			else if (CommandLine.ParseIpConnect(arg, out var addr, out var port, out var steamId))
 +			{
 +				// The following is a copy of the original join code, but calling the correct TryToJoinGame Method
 +				var startMenuScreen = FindObjectOfType<StartMenuScreen>();
