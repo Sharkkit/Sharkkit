@@ -1,4 +1,4 @@
-From b2492b04387a7c9b3467bafb42d0c1044db0f60a Mon Sep 17 00:00:00 2001
+From f5ed66d30b6d6e51643d35ce91daba093c40702a Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Fri, 20 Aug 2021 00:09:35 +0200
 Subject: [PATCH] Added an overload of Semih_Network#TryToJoinGame that takes
@@ -6,35 +6,36 @@ Subject: [PATCH] Added an overload of Semih_Network#TryToJoinGame that takes
  of that method.
 
 ---
- Semih_Network.cs | 48 ++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 40 insertions(+), 8 deletions(-)
+ Semih_Network.cs | 53 ++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 42 insertions(+), 11 deletions(-)
 
 diff --git a/Semih_Network.cs b/Semih_Network.cs
-index 90a1f68..2fda124 100644
+index 3dc8957..8c25bb0 100644
 --- a/Semih_Network.cs
 +++ b/Semih_Network.cs
-@@ -922,23 +922,41 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -926,7 +926,13 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
  		}
  	}
  
+-	public void TryToJoinGame(CSteamID hostID, string password)
 +	// Sharkkit Dedicated Start - Move method body down into a method also accepting ip:port addresses. 
- 	public void TryToJoinGame(CSteamID hostID, string password)
- 	{
-+		TryToJoinGame(hostID, password, null, 0);
++	public void TryToJoinGame(CSteamID hostId, string password)
++	{
++		TryToJoinGame(hostId, password, null, 0);
 +	}
 +
-+	public void TryToJoinGame(CSteamID fakeHostId, string password, string ipAddress, ushort port)
-+	{
++	public void TryToJoinGame(CSteamID hostId, string password, string ipAddress, ushort port)
+ 	{
  		if (IsConnectedToHost)
  		{
- 			Helper.LogBuild("Can't join game, you are already connected to a host");
+@@ -934,15 +940,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
  		}
  		else if (!awaitingConnectionResponseUser.IsValid())
  		{
 -			this.hostID = hostID;
 -			awaitingConnectionResponseUser = hostID;
-+			this.hostID = fakeHostId;
-+			awaitingConnectionResponseUser = fakeHostId;
++			this.hostID = hostId;
++			awaitingConnectionResponseUser = hostId;
  			isHost = false;
  			gameManagerStartCalled = false;
  			worldLoadedCoroutine = null;
@@ -44,22 +45,32 @@ index 90a1f68..2fda124 100644
 +			if (ipAddress != null)
 +			{
 +				// Sharkkit Dedicated - The Network Wrapper needs to prepare a connection
-+				NetworkWrapper.ConnectToIP(fakeHostId, ipAddress, port);
++				NetworkWrapper.ConnectToIP(hostId, ipAddress, port);
 +				Helper.LogBuild($"Sending request to join the dedicated server at {ipAddress}:{port}");
 +			}
 +			else
 +			{
-+				Helper.LogBuild("Sending request to join " + SteamFriends.GetFriendPersonaName(fakeHostId) + "'s game");
++				Helper.LogBuild("Sending request to join " + SteamFriends.GetFriendPersonaName(hostId) + "'s game");
 +			}
 +
-+			SendP2P(fakeHostId, new Message_InitiateConnection(Messages.InitiateSession, Settings.AppBuildID, password), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Session);
++			SendP2P(hostId, new Message_InitiateConnection(Messages.InitiateSession, Settings.AppBuildID, password), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Session);
  		}
  	}
 +	// Sharkkit Dedicated End - Move method body down into a method also accepting ip:port addresses.
  
  	public void LeaveGame(DisconnectReason reason, SceneName sceneName, bool saveGame)
  	{
-@@ -1311,13 +1329,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -980,8 +998,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+ 	{
+ 		if (awaitingConnectionResponseUser.IsValid())
+ 		{
+-			// Sharkkit Dedicated - Redirect call to Network Wrapper
+-			NetworkWrapper.CloseP2PSessionWithUser(HostID);
++			NetworkWrapper.CloseP2PSessionWithUser(HostID); // Sharkkit Dedicated - Redirect call to Network Wrapper
+ 			awaitingConnectionResponseUser.Clear();
+ 			hostID.Clear();
+ 		}
+@@ -1315,13 +1332,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
  		{
  			return;
  		}
@@ -70,13 +81,13 @@ index 90a1f68..2fda124 100644
 -			if (text2.Contains(CONNECT))
 +			text += arg;
 +			if (arg.Contains(CONNECT))
-+			{
+ 			{
+-				HandleConnectArgument(text2);
 +				HandleConnectArgument(arg);
 +			}
 +			// Sharkkit Dedicated Start - Parse ips from the commandline and auto-connect
 +			else if (CommandLine.Parse(arg, out var addr, out var port, out var steamId))
- 			{
--				HandleConnectArgument(text2);
++			{
 +				// The following is a copy of the original join code, but calling the correct TryToJoinGame Method
 +				var startMenuScreen = FindObjectOfType<StartMenuScreen>();
 +				// TODO: Password

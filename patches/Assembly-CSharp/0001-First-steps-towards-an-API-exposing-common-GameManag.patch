@@ -1,4 +1,4 @@
-From 175938bad613cb0a4556497df63265681c0cfe36 Mon Sep 17 00:00:00 2001
+From cc29a8962fddac511c3a5dfc02e4144e34e18604 Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Mon, 16 Aug 2021 01:15:17 +0200
 Subject: [PATCH] First steps towards an API exposing common GameManager fields
