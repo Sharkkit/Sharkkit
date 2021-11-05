@@ -82,4 +82,4 @@ jobs:
         distribution: Ubuntu-20.04
         
     - name: Apply the Patches
-      run: dotnet run --project papier/Papier.csproj -- applyPatches
+      run: dotnet run --project papier/Papier/Papier.csproj -- applyPatches
