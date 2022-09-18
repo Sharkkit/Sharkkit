@@ -1,17 +1,14 @@
-From 9105e9ab1e680fe0fa1a75140f7e7c7c5065e4f7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Wed, 18 Aug 2021 04:25:28 +0200
 Subject: [PATCH] First Step towards a dedicated server: delegate
  SteamNetworking calls to a wrapper that supports both connection types.
 
----
- Semih_Network.cs | 59 ++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 40 insertions(+), 19 deletions(-)
 
-diff --git a/Semih_Network.cs b/Semih_Network.cs
-index 303eb04..3dc8957 100644
---- a/Semih_Network.cs
-+++ b/Semih_Network.cs
+diff --git a/Raft_Network.cs b/Raft_Network.cs
+index 6bd779e3325faf0a3d0c65af34ff20e2cd06fb60..2c923519f9be91999deea3f0e1d58a299d41009b 100644
+--- a/Raft_Network.cs
++++ b/Raft_Network.cs
 @@ -4,6 +4,7 @@ using System.Collections.Generic;
  using System.IO;
  using System.Linq;
@@ -20,7 +17,7 @@ index 303eb04..3dc8957 100644
  using Steamworks;
  using UnityEngine;
  using UnityEngine.SceneManagement;
-@@ -210,7 +211,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -214,7 +215,7 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		InvokeRepeating("CalculateBytes", 1f, 1f);
  		DontDestroyOnLoadManager.AddGameObject(base.gameObject);
  		localSteamID = SteamUser.GetSteamID();
@@ -29,11 +26,11 @@ index 303eb04..3dc8957 100644
  		SceneManager.sceneLoaded += OnSceneLoaded;
  		bedRespawnPoint = GameObject.FindWithTag("RespawnPointBed");
  		loadSceneManager = GetComponent<LoadSceneManager>();
-@@ -226,14 +227,17 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -230,14 +231,17 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  
  	private void OnApplicationQuit()
  	{
-+		// Sharkkit Dedicated Start - Redirect calls to the Network Wrapper and deinit it 
++		// Sharkkit Dedicated Start - Redirect calls to the Network Wrapper and deinit it
  		foreach (KeyValuePair<CSteamID, Network_Player> remoteUser in remoteUsers)
  		{
 -			if (SteamNetworking.GetP2PSessionState(remoteUser.Key, out var _))
@@ -49,15 +46,15 @@ index 303eb04..3dc8957 100644
  	}
  
  	private void Awake()
-@@ -243,6 +247,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -247,6 +251,7 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  			UnityEngine.Object.Destroy(base.gameObject);
  			return;
  		}
-+		NetworkWrapper.Initialize(); // Sharkkit Dedicated - Initializing the networking stack 
++		NetworkWrapper.Initialize(); // Sharkkit Dedicated - Initializing the networking stack
  		initialized = true;
  		isHost = true;
  		HandleCommandArgs();
-@@ -260,6 +265,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -264,6 +269,7 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  
  	private void Update()
  	{
@@ -65,7 +62,7 @@ index 303eb04..3dc8957 100644
  		ReadP2P_Channel_Connecting();
  		ReadP2P_Channel_Game();
  	}
-@@ -384,7 +390,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -388,7 +394,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  			Packet_Single graph = new Packet_Single(EP2PSend.k_EP2PSendReliable, message);
  			memoryStream.SetLength(0L);
  			binaryFormatter.Serialize(memoryStream, graph);
@@ -75,7 +72,7 @@ index 303eb04..3dc8957 100644
  			{
  				Debug.LogError("Failed to send fragmented message: " + packetSingle.message);
  			}
-@@ -403,7 +410,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -407,7 +414,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  			{
  				SendP2PFragmented(memoryStream, binaryFormatter, steamID, packetSingle, channel);
  			}
@@ -85,7 +82,7 @@ index 303eb04..3dc8957 100644
  			{
  				Debug.LogError("Failed to send message: " + packetSingle.message);
  			}
-@@ -444,7 +452,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -448,7 +456,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		}
  		else
  		{
@@ -95,7 +92,7 @@ index 303eb04..3dc8957 100644
  		}
  		totalBytesSent += memoryStream.Length;
  		lastSecondBytes += memoryStream.Length;
-@@ -570,12 +579,14 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -574,12 +583,14 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  
  	private void ReadP2P_Channel_Connecting()
  	{
@@ -112,12 +109,12 @@ index 303eb04..3dc8957 100644
  		{
  			return;
  		}
-@@ -621,7 +632,11 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -634,7 +645,11 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  				{
- 					Semih_Network.OnJoinResult(psteamIDRemote, message_InitiateConnectionResult.result);
+ 					Raft_Network.OnJoinResult(psteamIDRemote, message_InitiateConnectionResult.result);
  				}
 -				if (awaitingConnectionResponseUser.IsValid() && awaitingConnectionResponseUser == psteamIDRemote)
-+				
++
 +				// Sharkkit Dedicated - Override this check because when connecting to a dedicated server, the steamId is not known before the handshake.
 +				// Sharkkit Dedicated - In Vanilla it also feels rare that a client gets an InitiateResult request from a server they didn't connect to, anyway...
 +				//if (awaitingConnectionResponseUser.IsValid() && awaitingConnectionResponseUser == psteamIDRemote)
@@ -125,10 +122,10 @@ index 303eb04..3dc8957 100644
  				{
  					if (!IsConnectedToHost && message_InitiateConnectionResult.result == InitiateResult.Success)
  					{
-@@ -637,20 +652,20 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
- 							SteamFriends.SetRichPresence("connect", CONNECT + HostID.ToString() + ":PW");
+@@ -650,20 +665,20 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
+ 							SteamFriends.SetRichPresence(PresenceKeyConnect, CONNECT + HostID.ToString() + ":PW");
  						}
- 						SteamFriends.SetRichPresence("status", STATUS_RemoteClient);
+ 						SteamFriends.SetRichPresence(PresenceKeyStatus, STATUS_RemoteClient);
 -						SteamNetworking.AcceptP2PSessionWithUser(psteamIDRemote);
 +						NetworkWrapper.AcceptP2PSessionWithUser(psteamIDRemote); // Sharkkit Dedicated - Redirect call to Network Wrapper
  						GameModeValueManager.SelectCurrentGameMode(message_InitiateConnectionResult.gameMode);
@@ -149,7 +146,7 @@ index 303eb04..3dc8957 100644
  				}
  				break;
  			}
-@@ -694,10 +709,11 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -700,10 +715,11 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  	private void ReadP2P_Channel_Game()
  	{
  		uint pcubMsgSize;
@@ -163,7 +160,7 @@ index 303eb04..3dc8957 100644
  			{
  				continue;
  			}
-@@ -964,7 +980,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -975,7 +991,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  	{
  		if (awaitingConnectionResponseUser.IsValid())
  		{
@@ -173,7 +170,7 @@ index 303eb04..3dc8957 100644
  			awaitingConnectionResponseUser.Clear();
  			hostID.Clear();
  		}
-@@ -1044,7 +1061,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1055,7 +1072,7 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		{
  			return InitiateResult.Fail_NotHost;
  		}
@@ -182,18 +179,18 @@ index 303eb04..3dc8957 100644
  		{
  			return InitiateResult.Fail_MissmatchAppBuildID;
  		}
-@@ -1420,7 +1437,9 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1426,7 +1443,9 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		{
  			connectingUsers.Remove(remoteID);
  		}
 -		if (IsUserWhitelisted(remoteID) && SteamNetworking.AcceptP2PSessionWithUser(remoteID))
-+		
++
 +		// Sharkkit Dedicated - Redirect call to Network Wrapper
 +		if (IsUserWhitelisted(remoteID) && NetworkWrapper.AcceptP2PSessionWithUser(remoteID))
  		{
  			Helper.LogBuild("Semih_Network: OnIncommingConnection = Adding client " + SteamFriends.GetFriendPersonaName(remoteID));
  			AddPlayer(remoteID, characterSettings);
-@@ -1552,7 +1571,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1566,7 +1585,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  			{
  				ComponentManager<SaveAndLoad>.Value.SaveGame(true);
  			}
@@ -203,7 +200,7 @@ index 303eb04..3dc8957 100644
  		}
  	}
  
-@@ -1561,7 +1581,8 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1575,7 +1595,8 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		yield return new WaitForSeconds(timeDelay);
  		foreach (KeyValuePair<CSteamID, Network_Player> remoteUser in remoteUsers)
  		{
@@ -213,6 +210,3 @@ index 303eb04..3dc8957 100644
  		}
  		remoteUsers.Clear();
  		isHost = false;
--- 
-2.7.4
-

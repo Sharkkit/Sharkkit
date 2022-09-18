@@ -1,33 +1,21 @@
-From 20839d6109ae6d07a84b6fd56660d7b59ce9056c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Fri, 20 Aug 2021 00:09:35 +0200
-Subject: [PATCH] Added an overload of Semih_Network#TryToJoinGame that takes
- an IP-Port Pair and added calls to the command line parsing for connect and
+Subject: [PATCH] Added an overload of Raft_Network#TryToJoinGame that takes an
+ IP-Port Pair and added calls to the command line parsing for connect and
  server hosting
 
----
- Semih_Network.cs | 64 +++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 52 insertions(+), 12 deletions(-)
 
-diff --git a/Semih_Network.cs b/Semih_Network.cs
-index 3dc8957..54c6001 100644
---- a/Semih_Network.cs
-+++ b/Semih_Network.cs
-@@ -632,7 +632,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
- 				{
- 					Semih_Network.OnJoinResult(psteamIDRemote, message_InitiateConnectionResult.result);
- 				}
--				
-+
- 				// Sharkkit Dedicated - Override this check because when connecting to a dedicated server, the steamId is not known before the handshake.
- 				// Sharkkit Dedicated - In Vanilla it also feels rare that a client gets an InitiateResult request from a server they didn't connect to, anyway...
- 				//if (awaitingConnectionResponseUser.IsValid() && awaitingConnectionResponseUser == psteamIDRemote)
-@@ -926,7 +926,13 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+diff --git a/Raft_Network.cs b/Raft_Network.cs
+index 2c923519f9be91999deea3f0e1d58a299d41009b..6131fa44176bf1894d22df77e6f2dc3d6824d878 100644
+--- a/Raft_Network.cs
++++ b/Raft_Network.cs
+@@ -937,7 +937,13 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		}
  	}
  
 -	public void TryToJoinGame(CSteamID hostID, string password)
-+	// Sharkkit Dedicated Start - Move method body down into a method also accepting ip:port addresses. 
++	// Sharkkit Dedicated Start - Move method body down into a method also accepting ip:port addresses.
 +	public void TryToJoinGame(CSteamID hostId, string password)
 +	{
 +		TryToJoinGame(hostId, password, null, 0);
@@ -37,7 +25,7 @@ index 3dc8957..54c6001 100644
  	{
  		if (IsConnectedToHost)
  		{
-@@ -934,15 +940,27 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -945,15 +951,27 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		}
  		else if (!awaitingConnectionResponseUser.IsValid())
  		{
@@ -50,7 +38,7 @@ index 3dc8957..54c6001 100644
  			worldLoadedCoroutine = null;
 -			Helper.LogBuild("Sending request to join " + SteamFriends.GetFriendPersonaName(hostID) + "'s game");
 -			SendP2P(hostID, new Message_InitiateConnection(Messages.InitiateSession, Settings.AppBuildID, password), EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Session);
-+			
++
 +			if (ipAddress != null)
 +			{
 +				// Sharkkit Dedicated - The Network Wrapper needs to prepare a connection
@@ -67,9 +55,9 @@ index 3dc8957..54c6001 100644
  	}
 +	// Sharkkit Dedicated End - Move method body down into a method also accepting ip:port addresses.
  
- 	public void LeaveGame(DisconnectReason reason, SceneName sceneName, bool saveGame)
+ 	public void LeaveGame(DisconnectReason reason, SceneName sceneName, bool saveGame, bool force = false)
  	{
-@@ -980,8 +998,7 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -991,8 +1009,7 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  	{
  		if (awaitingConnectionResponseUser.IsValid())
  		{
@@ -79,12 +67,12 @@ index 3dc8957..54c6001 100644
  			awaitingConnectionResponseUser.Clear();
  			hostID.Clear();
  		}
-@@ -1315,13 +1332,36 @@ public class Semih_Network : MonoBehaviour, SceneEventInterface
+@@ -1321,13 +1338,36 @@ public class Raft_Network : MonoBehaviour, SceneEventInterface
  		{
  			return;
  		}
 -		foreach (string text2 in commandLineArgs)
-+		
++
 +		// Sharkkit Dedicated Start - Parse the dedicated commandLine and host a server
 +		if (CommandLine.ParseDedicated(Array.AsReadOnly(commandLineArgs), out var listenArguments))
 +		{
@@ -92,7 +80,7 @@ index 3dc8957..54c6001 100644
 +			NetworkWrapper.ListenOn(listenArguments);
 +		}
 +		// Sharkkit Dedicated End - Parse the dedicated commandLine and host a server
-+		
++
 +		foreach (var arg in commandLineArgs)
  		{
 -			text += text2;
@@ -120,6 +108,3 @@ index 3dc8957..54c6001 100644
  		}
  		string[] array = text.Replace(" ", "").ToLower().Split('-');
  		foreach (string text3 in array)
--- 
-2.7.4
-

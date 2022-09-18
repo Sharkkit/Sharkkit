@@ -1,15 +1,11 @@
-From eb942806fefbd8d8430f45461eaa5fa188ebc588 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: MeFisto94 <MeFisto94@users.noreply.github.com>
 Date: Mon, 16 Aug 2021 14:52:02 +0200
 Subject: [PATCH] First steps at implementing the chat for IO
 
----
- ChatManager.cs | 12 +++++++++++-
- GameManager.cs |  7 ++++++-
- 2 files changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/ChatManager.cs b/ChatManager.cs
-index c3c8295..fbc4774 100644
+index 0e4e4b8fdf204aa0990b27f0eb0005bd3a542de1..56b6d505999e9ac59eaff24c24e7ba605923a126 100644
 --- a/ChatManager.cs
 +++ b/ChatManager.cs
 @@ -1,7 +1,7 @@
@@ -21,18 +17,18 @@ index c3c8295..fbc4774 100644
  {
  	public delegate void OnRecieveChatMessageAction();
  
-@@ -11,6 +11,11 @@ public class ChatManager : MonoBehaviour_Network
- 	public ChatTextFieldController chatFieldController;
+@@ -12,6 +12,11 @@ public class ChatManager : MonoBehaviour_Network
  
  	public static event OnRecieveChatMessageAction OnRecieveChatMessage;
-+	
+ 
 +	void SharkkitAPI.IChatManager.LocalDebugChatMessage(string message)
 +	{
 +		LocalDebugChatMessage(message);
 +	}
- 
++
  	private void Awake()
  	{
+ 		ComponentManager<ChatManager>.Value = this;
 @@ -65,6 +70,11 @@ public class ChatManager : MonoBehaviour_Network
  		chatManager.SendChatMessage(message, network_Player.steamID);
  	}
@@ -46,23 +42,18 @@ index c3c8295..fbc4774 100644
  	{
  		ChatManager chatManager = null;
 diff --git a/GameManager.cs b/GameManager.cs
-index 782394f..1b32426 100644
+index 112b32d0b92f9c78f0217ba185e3625923d574c2..41eae3883558a9245d2b33635b13600848799c19 100644
 --- a/GameManager.cs
 +++ b/GameManager.cs
-@@ -88,7 +88,12 @@ public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface, S
+@@ -92,6 +92,11 @@ public class GameManager : SingletonGeneric<GameManager>, SceneEventInterface, S
  
- 	string SharkkitAPI.GameManager.Version => Settings.VersionNumberText;
+ 	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText;
  
--	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText; 
-+	string SharkkitAPI.GameManager.ApiImplVersion => Settings.ImplVersionNumberText;
-+
 +	public SharkkitAPI.IChatManager GetChatManager()
 +	{
 +		return ComponentManager<ChatManager>.Value;
 +	}
- 
++
  	public SharkkitAPI.GameManager Instance => Singleton;
  	// Sharkkit End
--- 
-2.7.4
-
+ 
